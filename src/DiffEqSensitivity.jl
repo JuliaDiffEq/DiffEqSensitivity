@@ -1,6 +1,7 @@
 module DiffEqSensitivity
 
 using DiffEqBase, ForwardDiff, Tracker, FiniteDiff, Statistics
+using DiffEqBase: ForwardSensitivityJacobian
 using DiffEqCallbacks, QuadGK, RecursiveArrayTools, LinearAlgebra
 using Adapt
 using Parameters: @unpack

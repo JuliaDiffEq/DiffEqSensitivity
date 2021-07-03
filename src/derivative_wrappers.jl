@@ -466,7 +466,7 @@ function _vecjacobian!(dλ, y, λ, p, t, S::TS, isautojacvec::EnzymeVJP, dgrad, 
                         
   isautojacvec = get_jacvec(sensealg)
   if inplace_sensitivity(S)
-    if W==nothing
+    if W===nothing
       Enzyme.autodiff(S.diffcache.pf,Enzyme.Duplicated(tmp3, tmp4),
                       Enzyme.Duplicated(y, tmp1),
                       Enzyme.Duplicated(p, tmp2),

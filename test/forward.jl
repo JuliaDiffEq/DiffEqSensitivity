@@ -1,4 +1,4 @@
-using DiffEqSensitivity,OrdinaryDiffEq, RecursiveArrayTools, DiffEqBase,
+using DiffEqSensitivity, OrdinaryDiffEq, RecursiveArrayTools, DiffEqBase,
       ForwardDiff, Calculus
 using Test
 using DiffEqSensitivity: ForwardSensitivity
@@ -8,11 +8,15 @@ function fb(du,u,p,t)
   du[2] = dy = -p[3]*u[2] + u[1]*u[2]
 end
 function jac(J,u,p,t)
-  (x, y, a, b, c) = (u[1], u[2], p[1], p[2], p[3])
-  J[1,1] = a + y * b * -1
-  J[2,1] = y
-  J[1,2] = b * x * -1
-  J[2,2] = c * -1 + x
+  axes(J) == (1:2, 1:2) && axes(u) == (1:2,) && axes(p) == (1:3,) || error("Wrong size")
+  @inbounds begin
+    (x, y, a, b, c) = (u[1], u[2], p[1], p[2], p[3])
+    J[1,1] = a + y * b * -1
+    J[2,1] = y
+    J[1,2] = b * x * -1
+    J[2,2] = c * -1 + x
+  end
+  return nothing
 end
 
 f = ODEFunction(fb,jac=jac)
