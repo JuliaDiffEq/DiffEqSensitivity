@@ -50,13 +50,12 @@ function ODEInterpolatingAdjointSensitivityFunction(g,sensealg,discrete,sol,dg,f
       cpsol = solve(remake(sol.prob, tspan=interval, u0=sol(interval[1]), noise=forwardnoise),
          sol.alg, save_noise=false; dt=dt, tstops=_sol.t[idx1:end] ,tols...)
     else
-
       if tstops === nothing
         cpsol = solve(remake(sol.prob, tspan=interval, u0=sol(interval[1])),sol.alg; tols...)
       else
         if maximum(interval[1] .< tstops .< interval[2])
           # callback might have changed p
-          _p = reset_p(prob.kwargs[:callback], interval)
+          _p = reset_p(sol.prob.kwargs[:callback], interval)
           cpsol = solve(remake(sol.prob, tspan=interval, u0=sol(interval[1])),tstops=tstops,
                         p=_p, sol.alg; tols...)
         else
@@ -233,7 +232,7 @@ end
   discrete = t != nothing
 
   # remove duplicates from checkpoints
-  if ischeckpointing(sensealg) &&  (length(unique(checkpoints)) != length(checkpoints))
+  if (ischeckpointing(sensealg) || !isempty(callback.continuous_callbacks)) &&  (length(unique(checkpoints)) != length(checkpoints))
     _checkpoints, duplicate_iterator_times = separate_nonunique(checkpoints)
     tstops = duplicate_iterator_times[1]
     checkpoints = filter(x->x ∉ tstops, _checkpoints)
@@ -455,13 +454,57 @@ end
 
 
 function reset_p(CBS, interval)
-  # TODO: treat continuous callbacks
   # check which events are close to tspan[1]
-  ts = map(CBS.discrete_callbacks) do cb
-    indx = searchsortedfirst(cb.affect!.event_times, interval[1])
-    (indx, cb.affect!.event_times[indx])
+  if !isempty(CBS.discrete_callbacks)
+    ts = map(CBS.discrete_callbacks) do cb
+      indx = searchsortedfirst(cb.affect!.event_times, interval[1])
+      (indx, cb.affect!.event_times[indx])
+    end
+    perm = minimum(sortperm([t for t in getindex.(ts,2)]))
   end
-  perm = minimum(sortperm([t for t in getindex.(ts,2)]))
-  p = deepcopy(CBS.discrete_callbacks[perm].affect!.pleft[getindex.(ts,1)[perm]])
+
+  if !isempty(CBS.continuous_callbacks)
+    ts2 = map(CBS.continuous_callbacks) do cb
+      if !isempty(cb.affect!.event_times) && isempty(cb.affect_neg!.event_times)
+        indx = searchsortedfirst(cb.affect!.event_times, interval[1])
+        return (indx, cb.affect!.event_times[indx],0) # zero for affect!
+      elseif isempty(cb.affect!.event_times) && !isempty(cb.affect_neg!.event_times)
+        indx = searchsortedfirst(cb.affect_neg!.event_times, interval[1])
+        return (indx, cb.affect_neg!.event_times[indx],1) # one for affect_neg!
+      elseif !isempty(cb.affect!.event_times) && !isempty(cb.affect_neg!.event_times)
+        indx1 = searchsortedfirst(cb.affect!.event_times, interval[1])
+        indx2 = searchsortedfirst(cb.affect_neg!.event_times, interval[1])
+        if cb.affect!.event_times[indx1] < cb.affect_neg!.event_times[indx2]
+          return (indx1, cb.affect!.event_times[indx1],0)
+        else
+          return (indx2, cb.affect_neg!.event_times[indx2],1)
+        end
+      else
+        error("Expected event but reset_p couldn't find event time. Please report this error.")
+      end
+    end
+    perm2 = minimum(sortperm([t for t in getindex.(ts2,2)]))
+    # check if continuous or discrete callback was applied first if both occur in interval
+    if isempty(CBS.discrete_callbacks)
+      if ts2[perm2][3] == 0
+        p = deepcopy(CBS.continuous_callbacks[perm2].affect!.pleft[getindex.(ts2,1)[perm2]])
+      else
+        p = deepcopy(CBS.continuous_callbacks[perm2].affect_neg!.pleft[getindex.(ts2,1)[perm2]])
+      end
+    else
+      if ts[perm][2] < ts2[perm2][2]
+        p = deepcopy(CBS.discrete_callbacks[perm].affect!.pleft[getindex.(ts,1)[perm]])
+      else
+        if ts2[perm2][3] == 0
+          p = deepcopy(CBS.continuous_callbacks[perm2].affect!.pleft[getindex.(ts2,1)[perm2]])
+        else
+          p = deepcopy(CBS.continuous_callbacks[perm2].affect_neg!.pleft[getindex.(ts2,1)[perm2]])
+        end
+      end
+    end
+  else
+    p = deepcopy(CBS.discrete_callbacks[perm].affect!.pleft[getindex.(ts,1)[perm]])
+  end
+
   return p
 end

@@ -409,6 +409,7 @@ function (f::ReverseLossCallback)(integrator)
   if F !== nothing
     F !== I && F !== (I,I) && ldiv!(F, Δλd)
   end
+
   u[diffvar_idxs] .+= Δλd
   u_modified!(integrator,true)
   cur_time[] -= 1
@@ -417,12 +418,13 @@ end
 
 function generate_callbacks(sensefun, g, λ, t, callback, init_cb)
 
-  reverse_cbs = setup_reverse_callbacks(callback,sensefun.sensealg)
+  cur_time = Ref(length(t))
+
+  reverse_cbs = setup_reverse_callbacks(callback,sensefun.sensealg,g,cur_time)
   sensefun.discrete || return reverse_cbs, nothing
 
   # callbacks can lead to non-unique time points
   _t, duplicate_iterator_times = separate_nonunique(t)
-  cur_time = Ref(length(t))
 
   rlcb = ReverseLossCallback(sensefun, λ, t, g, cur_time)
 

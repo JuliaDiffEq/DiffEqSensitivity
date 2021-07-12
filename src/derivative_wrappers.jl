@@ -154,6 +154,17 @@ function jacobian!(J::AbstractMatrix{<:Number}, f, x::AbstractArray{<:Number},
   nothing
 end
 
+function derivative!(df::AbstractArray{<:Number}, f,
+                   x::Number,
+                   alg::DiffEqBase.AbstractSensitivityAlgorithm, der_config)
+    if alg_autodiff(alg)
+      ForwardDiff.derivative!(df, f, x, ) # der_config doesn't work
+    else
+      FiniteDiff.finite_difference_derivative!(df, f, x, der_config)
+    end
+    nothing
+end
+
 function gradient!(df::AbstractArray{<:Number}, f,
                    x::Union{Number,AbstractArray{<:Number}},
                    alg::DiffEqBase.AbstractSensitivityAlgorithm, grad_config)
@@ -463,7 +474,7 @@ function _vecjacobian!(dλ, y, λ, p, t, S::TS, isautojacvec::EnzymeVJP, dgrad, 
   #end
 
   vec(tmp4) .= vec(λ)
-                        
+
   isautojacvec = get_jacvec(sensealg)
   if inplace_sensitivity(S)
     if W==nothing
@@ -757,6 +768,15 @@ function build_grad_config(alg,tf,du1,t)
                                     ForwardDiff.Chunk{determine_chunksize(du1,alg)}())
   else
     grad_config = FiniteDiff.GradientCache(du1,t,diff_type(alg))
+  end
+  grad_config
+end
+
+function build_deriv_config(alg,tf,du1,t)
+  if alg_autodiff(alg)
+    grad_config = ForwardDiff.DerivativeConfig(tf,du1,t)
+  else
+    grad_config = FiniteDiff.DerivativeCache(du1,t,diff_type(alg))
   end
   grad_config
 end
