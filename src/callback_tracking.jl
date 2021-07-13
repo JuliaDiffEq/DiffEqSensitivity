@@ -133,7 +133,7 @@ vjps as described in https://arxiv.org/pdf/1905.10403.pdf Equation 13.
 
 For more information, see https://github.com/SciML/DiffEqSensitivity.jl/issues/4
 """
-setup_reverse_callbacks(cb,sensealg) = setup_reverse_callbacks(CallbackSet(cb),sensealg,g,cur_time)
+setup_reverse_callbacks(cb,sensealg,g,cur_time) = setup_reverse_callbacks(CallbackSet(cb),sensealg,g,cur_time)
 function setup_reverse_callbacks(cb::CallbackSet,sensealg,g,cur_time)
     cb = CallbackSet(_setup_reverse_callbacks.(cb.continuous_callbacks,(sensealg,),(g,),(cur_time,))...,
                      reverse(_setup_reverse_callbacks.(cb.discrete_callbacks,(sensealg,),(g,),(cur_time,)))...)
