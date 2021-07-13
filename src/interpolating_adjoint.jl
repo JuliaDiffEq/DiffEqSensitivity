@@ -232,7 +232,7 @@ end
   discrete = t != nothing
 
   # remove duplicates from checkpoints
-  if (ischeckpointing(sensealg) || !isempty(callback.continuous_callbacks)) &&  (length(unique(checkpoints)) != length(checkpoints))
+  if ischeckpointing(sensealg,sol) &&  (length(unique(checkpoints)) != length(checkpoints))
     _checkpoints, duplicate_iterator_times = separate_nonunique(checkpoints)
     tstops = duplicate_iterator_times[1]
     checkpoints = filter(x->x ∉ tstops, _checkpoints)
@@ -298,7 +298,7 @@ end
   discrete = t != nothing
 
   # remove duplicates from checkpoints
-  if ischeckpointing(sensealg) && (length(unique(checkpoints)) != length(checkpoints))
+  if ischeckpointing(sensealg,sol) && (length(unique(checkpoints)) != length(checkpoints))
     _checkpoints, duplicate_iterator_times = separate_nonunique(checkpoints)
     tstops = duplicate_iterator_times[1]
     checkpoints = filter(x->x ∉ tstops, _checkpoints)
@@ -382,7 +382,7 @@ end
   discrete = t != nothing
 
   # remove duplicates from checkpoints
-  if ischeckpointing(sensealg) && (length(unique(checkpoints)) != length(checkpoints))
+  if ischeckpointing(sensealg,sol) && (length(unique(checkpoints)) != length(checkpoints))
     _checkpoints, duplicate_iterator_times = separate_nonunique(checkpoints)
     tstops =  duplicate_iterator_times[1]
     checkpoints = filter(x->x ∉ tstops, _checkpoints)

@@ -61,9 +61,17 @@ function (f::TrackedAffect)(integrator)
     pleft = deepcopy(integrator.p)
     f.affect!(integrator)
     if integrator.u_modified
-        push!(f.event_times,integrator.t)
-        push!(f.uleft,uleft)
-        push!(f.pleft,pleft)
+        if isempty(f.event_times)
+          push!(f.event_times,integrator.t)
+          push!(f.uleft,uleft)
+          push!(f.pleft,pleft)
+        else
+          if !maximum(.≈(integrator.t, f.event_times, rtol=0.0, atol=1e-14))
+            push!(f.event_times,integrator.t)
+            push!(f.uleft,uleft)
+            push!(f.pleft,pleft)
+          end
+        end
     end
 end
 
@@ -181,13 +189,9 @@ function _setup_reverse_callbacks(cb::Union{ContinuousCallback,DiscreteCallback,
           if cb.save_positions == Bool[1, 1]
             # only correct if loss explicitly depends on state at event time.
             @unpack correction = cb.affect!
-            if sensealg isa Union{BacksolveAdjoint, QuadratureAdjoint}
-              # 1 shifts the cur_time by 1 to extract the correct loss value
-              indx = correction.cur_time[] + 1
-            else
-              # InterpolatingAdjoint needs a shift by 2 because it passes both loss computations
-              indx = correction.cur_time[] + 2
-            end
+            # 1 shifts the cur_time by 1 to extract the correct loss value
+            indx = correction.cur_time[] + 1
+
             implicit_correction!(λ,correction,sensealg,S,g,y,integrator,indx)
           end
         end
