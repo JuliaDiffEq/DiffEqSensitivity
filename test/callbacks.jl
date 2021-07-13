@@ -89,7 +89,7 @@ function test_discrete_callback(cb, tstops, g, dg!, cboop=nothing)
   @test du02 ≈ dstuff[1:2]
   @test dp2 ≈ dstuff[3:6]
 
-  cb2 = DiffEqSensitivity.track_callbacks(CallbackSet(cb),prob.tspan[1],prob.u0,prob.p)
+  cb2 = DiffEqSensitivity.track_callbacks(CallbackSet(cb),prob.tspan[1],prob.u0,prob.p,BacksolveAdjoint())
   sol_track = solve(prob,Tsit5(),u0=u0,p=p,callback=cb2,tstops=tstops,abstol=abstol,reltol=reltol,saveat=savingtimes)
   #cb_adj = DiffEqSensitivity.setup_reverse_callbacks(cb2,BacksolveAdjoint())
 
@@ -342,7 +342,7 @@ function test_continuous_callback(cb, g, dg!)
   @test_broken du02 ≈ dstuff[1:2]
   @test_broken dp2 ≈ dstuff[3:4]
 
-  cb2 = DiffEqSensitivity.track_callbacks(CallbackSet(cb),prob.tspan[1],prob.u0,prob.p)
+  cb2 = DiffEqSensitivity.track_callbacks(CallbackSet(cb),prob.tspan[1],prob.u0,prob.p,BacksolveAdjoint())
   sol_track = solve(prob,Tsit5(),u0=u0,p=p,callback=cb2,abstol=abstol,reltol=reltol,saveat=savingtimes)
 
   adj_prob = ODEAdjointProblem(sol_track,BacksolveAdjoint(),dg!,sol_track.t,nothing,
@@ -541,24 +541,24 @@ end
         cb = ContinuousCallback(condition,affect!,save_positions=(false,false))
         test_continuous_callback(cb,g,dg!)
       end
-    #   @testset "callbacks with no effect except saving the state" begin
-    #     condition(u,t,integrator) = u[1]
-    #     affect!(integrator) = (integrator.u[2] += 0)
-    #     cb = ContinuousCallback(condition,affect!)
-    #     test_continuous_callback(cb,g,dg!)
-    #   end
-    #   @testset "+= callback" begin
-    #     condition(u,t,integrator) = u[1]
-    #     affect!(integrator) = (integrator.u[2] += 50.0)
-    #     cb = ContinuousCallback(condition,affect!)
-    #     test_continuous_callback(cb,g,dg!)
-    #   end
-    #   @testset "= callback" begin
-    #     condition(u,t,integrator) = u[1]
-    #     affect!(integrator) = (integrator.u[2] = -integrator.p[2]*integrator.u[2])
-    #     cb = ContinuousCallback(condition,affect!)
-    #     test_continuous_callback(cb,g,dg!)
-    #   end
+      @testset "callbacks with no effect except saving the state" begin
+        condition(u,t,integrator) = u[1]
+        affect!(integrator) = (integrator.u[2] += 0)
+        cb = ContinuousCallback(condition,affect!)
+        test_continuous_callback(cb,g,dg!)
+      end
+      @testset "+= callback" begin
+        condition(u,t,integrator) = u[1]
+        affect!(integrator) = (integrator.u[2] += 50.0)
+        cb = ContinuousCallback(condition,affect!)
+        test_continuous_callback(cb,g,dg!)
+      end
+      @testset "= callback" begin
+        condition(u,t,integrator) = u[1]
+        affect!(integrator) = (integrator.u[2] = -integrator.p[2]*integrator.u[2])
+        cb = ContinuousCallback(condition,affect!)
+        test_continuous_callback(cb,g,dg!)
+      end
     end
   end
 end

@@ -93,11 +93,11 @@ function DiffEqBase._concrete_solve_adjoint(prob,alg,
 
   if haskey(kwargs, :callback) || haskey(prob.kwargs,:callback)
     if haskey(kwargs, :callback) && haskey(prob.kwargs,:callback)
-      cb = track_callbacks(CallbackSet(prob.kwargs[:callback],kwargs[:callback]),prob.tspan[1],prob.u0,prob.p)
+      cb = track_callbacks(CallbackSet(prob.kwargs[:callback],kwargs[:callback]),prob.tspan[1],prob.u0,prob.p,sensealg)
     elseif haskey(prob.kwargs,:callback)
-      cb = track_callbacks(CallbackSet(prob.kwargs[:callback]),prob.tspan[1],prob.u0,prob.p)
+      cb = track_callbacks(CallbackSet(prob.kwargs[:callback]),prob.tspan[1],prob.u0,prob.p,sensealg)
     else #haskey(kwargs,:callback)
-      cb = track_callbacks(CallbackSet(kwargs[:callback]),prob.tspan[1],prob.u0,prob.p)
+      cb = track_callbacks(CallbackSet(kwargs[:callback]),prob.tspan[1],prob.u0,prob.p,sensealg)
     end
     _prob = remake(prob,u0=u0,p=p,callback=cb)
   else
@@ -229,7 +229,7 @@ function DiffEqBase._concrete_solve_adjoint(prob,alg,
     else
       cb2 = cb
     end
-    
+
     du0, dp = adjoint_sensitivities(sol,alg,args...,df,ts; sensealg=sensealg,
                                     callback = cb2,
                                     kwargs_adj...)
