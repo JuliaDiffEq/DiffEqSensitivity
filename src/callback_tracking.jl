@@ -142,7 +142,7 @@ end
 
 function _setup_reverse_callbacks(cb::Union{ContinuousCallback,DiscreteCallback,VectorContinuousCallback},sensealg,g,loss_ref)
 
-    if cb isa Union{ContinuousCallback,VectorContinuousCallback}
+    if cb isa Union{ContinuousCallback,VectorContinuousCallback} && cb.affect! !== nothing
       cb.affect!.correction.cur_time = loss_ref # set cur_time
     end
 

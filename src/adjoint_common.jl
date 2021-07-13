@@ -418,7 +418,11 @@ end
 
 function generate_callbacks(sensefun, g, λ, t, callback, init_cb)
 
-  cur_time = Ref(length(t))
+  if !sensefun.discrete
+    cur_time = Ref(1)
+  else
+    cur_time = Ref(length(t))
+  end
 
   reverse_cbs = setup_reverse_callbacks(callback,sensefun.sensealg,g,cur_time)
   sensefun.discrete || return reverse_cbs, nothing
